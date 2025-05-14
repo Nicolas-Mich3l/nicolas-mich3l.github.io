@@ -1,1 +1,29 @@
-hello world
+<html lang="en">
+  <style>
+    body {
+      background-image: url('./assets/vaporwave.gif');
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: cover;
+      font-family: sans-serif;
+    }
+  </style>
+  <body>
+    <div style="display:flex; justify-content: right; color:#ffffff">
+      <p id="datetime"
+      style="border: solid#ffffff; background-color: rgba(256, 256, 256, 0.125); padding: 4px 12px; border-radius: 8px;"> </p>
+      <script>
+        function getTime() {
+          document.querySelector("#datetime").innerHTML = new Date().toLocaleString();;
+        }
+        setInterval(getTime,1000);
+        
+      </script>
+    </div>
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 16px; border: solid; width: fit-content; border-radius: 16px; background-color:#ffffff">
+      <h1 style="margin:0px;">nicolasOS</h1>
+      <p style="margin:0px;">an interactive personal & semi-professional OS-themed website</p>
+    </div>
+  </body>
+
+</html>
