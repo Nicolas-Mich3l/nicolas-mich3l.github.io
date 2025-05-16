@@ -4,20 +4,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-    <div id="container">
-        <p id="dateTime"></p>
-        <div id="windowBody">
-            <div id="topBar">
-                <div id="close"></div>
+    <p id="dateTime"></p>
+    <div class="window" data-window-id="main" style="left: 100px; top: 100px;">
+        <div class="window-top-bar">
+            <div class="window-controls">
+                <div class="window-close"></div>
+                <div class="window-minimize"></div>
+                <div class="window-maximize"></div>
             </div>
-            <div id="contentArea">
-                <h1>nicolasOS</h1>
-                <p>an interactive personal & resume OS-themed website</p>
-            </div>
+            <div class="window-title"></div>
+        </div>
+        <div class="window-content">
+            <h1>nicolasOS</h1>
+            <p>an interactive personal OS-themed website</p>
         </div>
     </div>
 </body>
 <script src="./scripts/movable.js"> </script>
 <script src="./scripts/datetime.js"></script>
 <script> setInterval(getTime,1000);</script>
-</html>
+</html> 
