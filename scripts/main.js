@@ -78,6 +78,51 @@ class WindowManager {
         
         return windowId;
     }
+
+    // Create a new window dynamically
+    createWindow(options = {}) {
+        const {
+            title = 'New Window',
+            content = '',
+            x = 50,
+            y = 50,
+            width = 400,
+            height = null
+        } = options;
+        
+        // Create window elements
+        const windowEl = document.createElement('div');
+        windowEl.className = 'window';
+        windowEl.style.left = `${x}px`;
+        windowEl.style.top = `${y}px`;
+        
+        if (width) windowEl.style.width = `${width}px`;
+        if (height) windowEl.style.height = `${height}px`;
+        
+        // Create window structure
+        windowEl.innerHTML = `
+            <div class="window-top-bar">
+                <div class="window-controls">
+                    <div class="window-close"></div>
+                    <div class="window-minimize"></div>
+                    <div class="window-maximize"></div>
+                </div>
+                <div class="window-title">${title}</div>
+            </div>
+            <div class="window-content">
+                ${content}
+            </div>
+        `;
+        
+        // Add to DOM
+        document.body.appendChild(windowEl);
+        
+        // Register window
+        const windowId = this.registerWindow(windowEl);
+        this.activateWindow(windowId);
+        
+        return windowId;
+    }
     
     // Start dragging a window
     startDragging(windowId, e) {
@@ -206,5 +251,109 @@ class WindowManager {
     }
 }
 
-// Initialize the window manager
-const windowManager = new WindowManager();
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the window manager
+    const windowManager = new WindowManager();
+    // Track active windows
+    const activeWindows = new Map();
+            
+    // Get all the dock icons
+    const dockIcons = document.querySelectorAll('.dock-icon');
+
+    const appContent = {};
+
+    // Function to load app content from separate HTML files
+    async function loadAppContent(appName) {
+        if (appContent[appName]) {
+            return appContent[appName]; // Return cached content if available
+        }
+        
+        try {
+            const response = await fetch(`../app-content/${appName}.html`);
+            if (!response.ok) {
+                throw new Error(`Failed to load content for ${appName}`);
+            }
+            const content = await response.text();
+            appContent[appName] = content; // Cache the content
+            return content;
+        } catch (error) {
+            console.error('Error loading app content:', error);
+            // Return fallback content if loading fails
+            return `
+                <div class="app-placeholder">
+                    <img src="/api/placeholder/80/80" alt="${appName} Icon">
+                    <h3>${appName.charAt(0).toUpperCase() + appName.slice(1)} App</h3>
+                    <p>Content could not be loaded.</p>
+                </div>
+            `;
+        }
+    }
+
+    dockIcons.forEach(icon => {
+        icon.addEventListener('click', async function() {
+            const appName = this.getAttribute('data-app');
+            
+            // If window exists and is minimized, restore it
+            if (activeWindows.has(appName)) {
+                const windowId = activeWindows.get(appName);
+                
+                // Check if window is in minimized set
+                if (windowManager.minimizedWindows.has(windowId)) {
+                    windowManager.restoreWindow(windowId);
+                    this.classList.add('active');
+                } else {
+                    // If window is already active, minimize it
+                    windowManager.minimizeWindow(windowId);
+                    this.classList.remove('active');
+                }
+            } else {
+                // Load content for this app
+                const content = await loadAppContent(appName);
+                
+                // Create a new window for this app
+                const windowId = windowManager.createWindow({
+                    title: appName.charAt(0).toUpperCase() + appName.slice(1),
+                    content: content,
+                    x: 100 + Math.random() * 50,
+                    y: 100 + Math.random() * 50,
+                    width: 600,
+                    height: 400
+                });
+                
+                // Store the window id for this app
+                activeWindows.set(appName, windowId);
+                
+                // Add active class to the icon
+                this.classList.add('active');
+                
+                // Listen for window close to update active windows and icon state
+                const windowEl = document.querySelector(`[data-window-id="${windowId}"]`);
+                const closeBtn = windowEl.querySelector('.window-close');
+                
+                closeBtn.addEventListener('click', () => {
+                    activeWindows.delete(appName);
+                    this.classList.remove('active');
+                });
+            }
+        });
+    });
+
+    
+
+    // Listen for window-minimized events
+    document.addEventListener('window-minimized', function(e) {
+        const { windowId } = e.detail;
+        
+        // Find the app associated with this window
+        for (const [appName, activeWindowId] of activeWindows.entries()) {
+            if (activeWindowId === windowId) {
+                // Remove active class from icon
+                const icon = document.querySelector(`.dock-icon[data-app="${appName}"]`);
+                if (icon) {
+                    icon.classList.remove('active');
+                }
+                break;
+            }
+        }
+    });
+});

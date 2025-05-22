@@ -125,6 +125,51 @@ body{
     margin: 5px 0 0 0;
 }
 
+/* The dock container */
+.dock {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 12px 12px 0 0;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+/* Individual dock icons */
+.dock-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.dock-icon:hover {
+    transform: scale(1.1);
+}
+
+.dock-icon.active {
+    box-shadow: 0 0 0 2px #fff;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.dock-icon img {
+    width: 32px;
+    height: 32px;
+}
+
 #dateTime{
     font-family: "DS-DIGIT";
     color:#ffffff;
