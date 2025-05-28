@@ -260,7 +260,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get all the dock icons
     const dockIcons = document.querySelectorAll('.dock-icon');
 
+
     const appContent = {};
+
 
     // Function to load app content from separate HTML files
     async function loadAppContent(appName) {
@@ -275,6 +277,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const content = await response.text();
             appContent[appName] = content; // Cache the content
+
+            if(appName == 'files') {
+                setTimeout(() => {
+                    setupFileListeners();
+                }, 0);
+            }
             return content;
         } catch (error) {
             console.error('Error loading app content:', error);
@@ -287,6 +295,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
         }
+    }
+
+
+    function setupFileListeners() {
+        document.querySelectorAll('.file-item[data-url]').forEach(item => {
+            item.addEventListener('click', function() {
+                window.open(this.dataset.url, '_blank');
+            });
+        });
+        document.querySelectorAll('.file-item[data-action]').forEach(item => {
+            item.addEventListener('click', function() {
+                const action = this.dataset.action;
+                console.log(action)
+                openWindow(action);
+            });
+        });
+    }
+
+    async function openWindow(appName) {
+        if (activeWindows.has(appName)) {
+                const windowId = activeWindows.get(appName);
+                
+                // Check if window is in minimized set
+                if (windowManager.minimizedWindows.has(windowId)) {
+                    windowManager.restoreWindow(windowId);
+                } else {
+                    // If window is already active, minimize it
+                    windowManager.minimizeWindow(windowId);
+                }
+            } else {
+                // Load content for this app
+                const content = await loadAppContent(appName);
+                
+                // Create a new window for this app
+                const windowId = windowManager.createWindow({
+                    title: appName.charAt(0).toUpperCase() + appName.slice(1),
+                    content: content,
+                    x: 100 + Math.random() * 50,
+                    y: 100 + Math.random() * 50,
+                    width: 600,
+                    height: 400
+                });
+                
+                // Store the window id for this app
+                activeWindows.set(appName, windowId);
+                
+                
+                // Listen for window close to update active windows and icon state
+                const windowEl = document.querySelector(`[data-window-id="${windowId}"]`);
+                const closeBtn = windowEl.querySelector('.window-close');
+                
+                closeBtn.addEventListener('click', () => {
+                    activeWindows.delete(appName);
+                });
+            }
     }
 
     dockIcons.forEach(icon => {
@@ -339,7 +402,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     
-
     // Listen for window-minimized events
     document.addEventListener('window-minimized', function(e) {
         const { windowId } = e.detail;
@@ -356,4 +418,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    
 });

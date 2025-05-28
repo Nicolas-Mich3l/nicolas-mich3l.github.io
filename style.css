@@ -282,3 +282,53 @@ body{
 .linkedin-link {
     color: #0077b5;
 }
+
+.file-list {
+    flex: 1;
+    background: #d8d8d84f;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
+    user-select: none;
+    border: 2px solid transparent;
+}
+
+.file-item:hover {
+    background: #c6e0f3;
+}
+
+.file-item.selected {
+    background: #0066cc;
+    color: white;
+}
+
+.file-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.file-name {
+    flex: 1;
+    font-size: 13px;
+}
+
+.file-size {
+    font-size: 11px;
+    color: #666;
+    margin-left: 10px;
+}
