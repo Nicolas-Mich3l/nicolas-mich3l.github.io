@@ -18,7 +18,10 @@ body{
 
 /* Window style */
 .window {
-    width: 400px;
+    width: max-content;
+    min-width: 200px;  /* Minimum width to prevent too narrow windows */
+    max-width: 80vw;   /* Maximum width to prevent windows larger than viewport */
+    max-height: 80vh;  /* Maximum height to prevent windows larger than viewport */
     background-color: #f0f0f0;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -26,6 +29,8 @@ body{
     overflow: hidden;
     position: absolute;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Window gets higher z-index when active */
@@ -45,6 +50,7 @@ body{
     align-items: center;
     padding: 0 10px;
     cursor: move;
+    flex-shrink: 0;
 }
 
 .window.active .window-top-bar {
@@ -58,7 +64,7 @@ body{
     margin-right: 8px;
 }
 
-/* Close button (circle) */
+/* Close button */
 .window-close {
     width: 12px;
     height: 12px;
@@ -72,7 +78,7 @@ body{
     background-color: #ff4343;
 }
 
-/* Minimize button (circle) */
+/* Minimize button */
 .window-minimize {
     width: 12px;
     height: 12px;
@@ -85,7 +91,7 @@ body{
     background-color: #f9ac00;
 }
 
-/* Maximize button (circle) */
+/* Maximize button */
 .window-maximize {
     width: 12px;
     height: 12px;
@@ -109,7 +115,10 @@ body{
 
 /* Content area */
 .window-content {
-    padding: 20px;
+    padding: 10px;
+    overflow: auto; 
+    flex: 1; 
+    min-height: 0;
 }
 
 /* Common text styles */
