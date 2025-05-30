@@ -87,7 +87,8 @@ class WindowManager {
             x = 50,
             y = 50,
             width = 400,
-            height = null
+            height = null,
+            id = ''
         } = options;
         
         // Create window elements
@@ -95,7 +96,7 @@ class WindowManager {
         windowEl.className = 'window';
         windowEl.style.left = `${x}px`;
         windowEl.style.top = `${y}px`;
-        
+        windowEl.id = id
         if (width) windowEl.style.width = `${width}px`;
         if (height) windowEl.style.height = `${height}px`;
         
@@ -176,12 +177,9 @@ class WindowManager {
         const windowData = this.windows.get(windowId);
         if (!windowData) return;
         
-        // Here you would typically animate the window to a taskbar or dock
-        // For now, we'll just hide it and track it as minimized
         windowData.element.style.display = 'none';
         this.minimizedWindows.add(windowId);
         
-        // You could trigger a custom event here for a taskbar to react
         const event = new CustomEvent('window-minimized', { 
             detail: { windowId, title: windowData.element.querySelector('.window-title').textContent }
         });
@@ -259,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
     // Get all the dock icons
     const dockIcons = document.querySelectorAll('.dock-icon');
-
+    
 
     const appContent = {};
 
@@ -324,32 +322,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     // If window is already active, minimize it
                     windowManager.minimizeWindow(windowId);
                 }
-            } else {
-                // Load content for this app
-                const content = await loadAppContent(appName);
-                
-                // Create a new window for this app
-                const windowId = windowManager.createWindow({
-                    title: appName.charAt(0).toUpperCase() + appName.slice(1),
-                    content: content,
-                    x: 100 + Math.random() * 50,
-                    y: 100 + Math.random() * 50,
-                    width: 600,
-                    height: 400
-                });
-                
-                // Store the window id for this app
-                activeWindows.set(appName, windowId);
-                
-                
-                // Listen for window close to update active windows and icon state
-                const windowEl = document.querySelector(`[data-window-id="${windowId}"]`);
-                const closeBtn = windowEl.querySelector('.window-close');
-                
-                closeBtn.addEventListener('click', () => {
-                    activeWindows.delete(appName);
-                });
-            }
+        } else {
+            // Load content for this app
+            const content = await loadAppContent(appName);
+            
+            // Create a new window for this app
+            const windowId = windowManager.createWindow({
+                title: appName.charAt(0).toUpperCase() + appName.slice(1),
+                content: content,
+                x: 100 + Math.random() * 50,
+                y: 100 + Math.random() * 50,
+                width: 600,
+                height: 400,
+                id: appName
+            });
+            
+            // Store the window id for this app
+            activeWindows.set(appName, windowId);
+            
+            
+            // Listen for window close to update active windows and icon state
+            const windowEl = document.querySelector(`[data-window-id="${windowId}"]`);
+            const closeBtn = windowEl.querySelector('.window-close');
+            
+            closeBtn.addEventListener('click', () => {
+                activeWindows.delete(appName);
+            });
+        }
     }
 
     dockIcons.forEach(icon => {
@@ -372,7 +371,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // Load content for this app
                 const content = await loadAppContent(appName);
-                
+                if(appName == "music"){
+                    const event = new Event("music_open")
+                    window.dispatchEvent(event)
+                }
                 // Create a new window for this app
                 const windowId = windowManager.createWindow({
                     title: appName.charAt(0).toUpperCase() + appName.slice(1),
@@ -380,7 +382,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     x: 100 + Math.random() * 50,
                     y: 100 + Math.random() * 50,
                     width: 600,
-                    height: 400
+                    height: 400,
+                    id: appName
                 });
                 
                 // Store the window id for this app
