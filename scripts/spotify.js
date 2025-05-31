@@ -203,8 +203,3 @@ function toggleAllGenres(button) {
         button.textContent = `Show All ${button.textContent.match(/\d+/)[0]} Genres`;
     }
 }
-
-// Handle Enter key in input fields
-document.addEventListener('keydown', function(event) {
-    // Future functionality can be added here
-});

@@ -421,6 +421,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-
-    
 });
