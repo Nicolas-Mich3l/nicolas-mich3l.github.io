@@ -275,12 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const content = await response.text();
             appContent[appName] = content; // Cache the content
-
-            if(appName == 'files') {
-                setTimeout(() => {
-                    setupFileListeners();
-                }, 0);
-            }
             return content;
         } catch (error) {
             console.error('Error loading app content:', error);
@@ -374,6 +368,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(appName == "music"){
                     const event = new Event("music_open")
                     window.dispatchEvent(event)
+                }
+                if(appName == 'files') {
+                setTimeout(() => {
+                    setupFileListeners();
+                }, 0);
                 }
                 // Create a new window for this app
                 const windowId = windowManager.createWindow({

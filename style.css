@@ -20,9 +20,9 @@ body{
 /* Window style */
 .window {
     width: max-content;
-    min-width: 200px;  /* Minimum width to prevent too narrow windows */
-    max-width: 80vw;   /* Maximum width to prevent windows larger than viewport */
-    max-height: 80vh;  /* Maximum height to prevent windows larger than viewport */
+    min-width: 200px;  
+    max-width: 80vw;   
+    max-height: 80vh;  
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 8px;
@@ -347,9 +347,9 @@ body{
 
 #music{
     width: max-content;
-    min-width: 200px;  /* Minimum width to prevent too narrow windows */
-    max-width: 80vw;   /* Maximum width to prevent windows larger than viewport */
-    max-height: 80vh;  /* Maximum height to prevent windows larger than viewport */
+    min-width: 200px;
+    max-width: 80vw;  
+    max-height: 80vh;
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 8px;
