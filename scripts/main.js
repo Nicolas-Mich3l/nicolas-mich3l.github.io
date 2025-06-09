@@ -4,6 +4,26 @@ class WindowManager {
         this.windows = new Map();
         this.highestZIndex = 2;
         this.minimizedWindows = new Set();
+        this.tiledWindows = new Map(); 
+        this.snapZones = {
+            top: { x: 0, y: '32.5px', width: '100%', height: 'calc(50vh - 35px)' },
+            bottom: { x: 0, y: '50vh', width: '100%', height: 'calc(50vh - 75px)' },
+            left: { x: 0, y: '32.5px', width: '50%', height: 'calc(100vh - 105px)' },
+            right: { x: '50%', y: '32.5px', width: '50%', height: 'calc(100vh - 105px)' }
+        };
+        this.quarterZones = {
+            'top-left': { x: 0, y: '32.5px', width: '50%', height: 'calc(50vh - 35px)' },
+            'top-right': { x: '50%', y: '32.5px', width: '50%', height: 'calc(50vh - 35px)' },
+            'bottom-left': { x: 0, y: '50vh', width: '50%', height: 'calc(50vh - 60px)' },
+            'bottom-right': { x: '50%', y: '50vh', width: '50%', height: 'calc(50vh - 60px)' },
+            'left-top': { x: 0, y: '32.5px', width: '50%', height: 'calc(50vh - 35px)' },
+            'left-bottom': { x: 0, y: '50vh', width: '50%', height: 'calc(50vh - 75px)' },
+            'right-top': { x: '50%', y: '32.5px', width: '50%', height: 'calc(50vh - 35px)' },
+            'right-bottom': { x: '50%', y: '50vh', width: '50%', height: 'calc(50vh - 75px)' }
+        };
+
+        this.snapDistance = 30;
+        this.currentSnapZone = null;
         this.initialize();
     }
     
@@ -13,6 +33,10 @@ class WindowManager {
             const windowId = windowEl.getAttribute('data-window-id');
             this.registerWindow(windowEl, windowId);
         });
+
+        // Create snap preview overlay
+        this.createSnapPreview();
+
         // Set up global event listeners
         document.addEventListener('mouseup', () => {
             this.stopDragging();
@@ -21,6 +45,22 @@ class WindowManager {
             this.handleDrag(e);
         });
     }
+
+    createSnapPreview() {
+        this.snapPreview = document.createElement('div');
+        this.snapPreview.className = 'snap-preview';
+        this.snapPreview.style.cssText = `
+            position: fixed;
+            background: rgba(74, 144, 226, 0.3);
+            border: 2px solid #4a90e2;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            box-sizing: border-box;
+        `;
+        document.body.appendChild(this.snapPreview);
+    }
+
     
     registerWindow(windowEl, windowId) {
         if (!windowId) {
@@ -38,6 +78,9 @@ class WindowManager {
             isDragging: false,
             offset: { x: 0, y: 0 },
             isMaximized: false,
+            isTiled: false,
+            tiledPosition: null,
+            pretiledSize: null,
             originalSize: null
         });
         
@@ -124,13 +167,183 @@ class WindowManager {
         
         return windowId;
     }
+
+    // Detect which edge the mouse is near
+    detectSnapZone(x, y) {
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        // Check edges
+        if (x <= this.snapDistance) return 'left';
+        if (x >= windowWidth - this.snapDistance) return 'right';
+        if (y <= 30 + this.snapDistance) return 'top';
+        if (y >= windowHeight - 75 - this.snapDistance) return 'bottom';
+        
+        return null;
+    }
+
     
+    // Show snap preview
+    showSnapPreview(zone, windowId) {
+        if (!zone) {
+            this.snapPreview.style.display = 'none';
+            this.currentSnapZone = null;
+            return;
+        }
+        
+        this.currentSnapZone = zone;
+        
+        // Check if there's already a tiled window in this zone
+        const existingWindow = this.tiledWindows.get(zone);
+        let snapZone;
+        
+        if (existingWindow && existingWindow !== windowId) {
+            // Create quarters
+            if (zone === 'top' || zone === 'bottom') {
+                // For top/bottom, split left/right
+                snapZone = this.quarterZones[`${zone}-right`];
+            } else {
+                // For left/right, split top/bottom  
+                snapZone = this.quarterZones[`${zone}-bottom`];
+            }
+        } else {
+            snapZone = this.snapZones[zone];
+        }
+        
+        // Position the preview
+        this.snapPreview.style.display = 'block';
+        this.snapPreview.style.left = snapZone.x;
+        this.snapPreview.style.top = snapZone.y;
+        this.snapPreview.style.width = snapZone.width;
+        this.snapPreview.style.height = snapZone.height;
+    }
+
+    // Apply tiling to a window
+    tileWindow(windowId, zone) {
+        const windowData = this.windows.get(windowId);
+        if (!windowData) return;
+        
+        // If not already tiled store current size before tiling
+        if (!windowData.isTiled) {
+            windowData.pretiledSize = {
+                width: windowData.element.style.width,
+                height: windowData.element.style.height,
+                left: windowData.element.style.left,
+                top: windowData.element.style.top
+            };
+        }
+        
+        // Check if there's already a window tiled to this zone
+        const existingWindow = this.tiledWindows.get(zone);
+        let targetZone;
+        let quarterPosition;
+        
+        if (existingWindow && existingWindow !== windowId) {
+            // Create quarters
+            if (zone === 'top' || zone === 'bottom') {
+                // Move existing window to left quarter, new window to right quarter
+                quarterPosition = `${zone}-right`;
+                this.applyWindowPosition(existingWindow, this.quarterZones[`${zone}-left`]);
+                this.windows.get(existingWindow).tiledPosition = `${zone}-left`;
+                targetZone = this.quarterZones[quarterPosition];
+            } else {
+                // Move existing window to top quarter, new window to bottom quarter
+                quarterPosition = `${zone}-bottom`;
+                this.applyWindowPosition(existingWindow, this.quarterZones[`${zone}-top`]);
+                this.windows.get(existingWindow).tiledPosition = `${zone}-top`;
+                targetZone = this.quarterZones[quarterPosition];
+            }
+        } else {
+            targetZone = this.snapZones[zone];
+            quarterPosition = zone;
+        }
+        
+        // Apply position to the dragged window
+        this.applyWindowPosition(windowId, targetZone);
+        
+        // Update window state
+        windowData.isTiled = true;
+        windowData.tiledPosition = quarterPosition;
+        this.tiledWindows.set(zone, windowId);
+        
+        // If we created quarters, we need to track both
+        if (existingWindow && existingWindow !== windowId) {
+            if (zone === 'top' || zone === 'bottom') {
+                this.tiledWindows.set(`${zone}-left`, existingWindow);
+                this.tiledWindows.set(`${zone}-right`, windowId);
+            } else {
+                this.tiledWindows.set(`${zone}-top`, existingWindow);
+                this.tiledWindows.set(`${zone}-bottom`, windowId);
+            }
+        }
+    }
+    
+    // Apply position and size to window
+    applyWindowPosition(windowId, zone) {
+        const windowData = this.windows.get(windowId);
+        if (!windowData) return;
+        
+        const el = windowData.element;
+        el.style.left = zone.x;
+        el.style.top = zone.y;
+        el.style.width = zone.width;
+        el.style.height = zone.height;
+    }
+    
+    // Untile a window (restore to pre-tiled state)
+    untileWindow(windowId) {
+        const windowData = this.windows.get(windowId);
+        if (!windowData || !windowData.isTiled) return;
+        
+        // Remove from tiled windows tracking
+        const position = windowData.tiledPosition;
+        this.tiledWindows.delete(position);
+        
+        // If this was a quarter tile, we need to expand the remaining window
+        const basePosition = position.split('-')[0]; // 'top', 'bottom', 'left', 'right'
+        const remainingQuarter = position.includes('-left') ? `${basePosition}-right` : 
+                                position.includes('-right') ? `${basePosition}-left` :
+                                position.includes('-top') ? `${basePosition}-bottom` : 
+                                position.includes('-bottom') ? `${basePosition}-top` : null;
+        
+        if (remainingQuarter && this.tiledWindows.has(remainingQuarter)) {
+            const remainingWindowId = this.tiledWindows.get(remainingQuarter);
+            this.tiledWindows.delete(remainingQuarter);
+            this.tiledWindows.set(basePosition, remainingWindowId);
+            
+            // Expand remaining window to full half
+            this.applyWindowPosition(remainingWindowId, this.snapZones[basePosition]);
+            this.windows.get(remainingWindowId).tiledPosition = basePosition;
+        }
+        
+        // Restore original size
+        if (windowData.pretiledSize) {
+            const { width, height, left, top } = windowData.pretiledSize;
+            windowData.element.style.width = width;
+            windowData.element.style.height = height;
+            windowData.element.style.left = left;
+            windowData.element.style.top = top;
+        }
+        
+        // Reset tiling state
+        windowData.isTiled = false;
+        windowData.tiledPosition = null;
+        windowData.pretiledSize = null;
+    }
+
     // Start dragging a window
     startDragging(windowId, e) {
         const windowData = this.windows.get(windowId);
         if (!windowData || windowData.isMaximized) return;
-        
+
+        // If window is tiled, untile it first
+        if (windowData.isTiled) {
+            // todo implement untile
+            this.untileWindow(windowId);
+        }
+
         windowData.isDragging = true;
+
         
         const rect = windowData.element.getBoundingClientRect();
         windowData.offset = {
@@ -143,29 +356,63 @@ class WindowManager {
     
     // Handle dragging movement
     handleDrag(e) {
+        let draggingWindowId = null;
         for (const [windowId, windowData] of this.windows.entries()) {
             if (windowData.isDragging) {
+                draggingWindowId = windowId;
                 const x = e.clientX - windowData.offset.x;
                 const y = e.clientY - windowData.offset.y;
                 
                 windowData.element.style.left = `${x}px`;
                 windowData.element.style.top = `${y}px`;
-                break; // Only one window can be dragged at a time
+                break; 
             }
+        }
+        // Show snap preview if dragging
+        if (draggingWindowId) {
+            const snapZone = this.detectSnapZone(e.clientX, e.clientY);
+            this.showSnapPreview(snapZone, draggingWindowId);
         }
     }
     
     // Stop dragging
     stopDragging() {
-        for (const windowData of this.windows.values()) {
-            windowData.isDragging = false;
+        let draggedWindowId = null;
+
+        // Find dragged window and apply tiling if in snap zone
+        for (const [windowId, windowData] of this.windows.entries()) {
+            if (windowData.isDragging) {
+                draggedWindowId = windowId;
+                windowData.isDragging = false;
+                break;
+            }
         }
+        
+        // Apply tiling if there's a current snap zone
+        if (this.currentSnapZone && draggedWindowId) {
+            // Check if the zone is available or can be shared
+            const existingWindow = this.tiledWindows.get(this.currentSnapZone);
+            if (!existingWindow || existingWindow === draggedWindowId) {
+                this.tileWindow(draggedWindowId, this.currentSnapZone);
+            } else {
+                // Try to create quarters
+                this.tileWindow(draggedWindowId, this.currentSnapZone);
+            }
+        }
+        
+        // Hide snap preview
+        this.showSnapPreview(null);
     }
     
     // Close a window
     closeWindow(windowId) {
         const windowData = this.windows.get(windowId);
         if (!windowData) return;
+
+        // Remove from tiling if tiled
+        if (windowData.isTiled) {
+            this.untileWindow(windowId);
+        }
         
         windowData.element.remove();
         this.windows.delete(windowId);
@@ -212,6 +459,10 @@ class WindowManager {
             }
             windowData.isMaximized = false;
         } else {
+            // Untile if tiled before maximizing
+            if (windowData.isTiled) {
+                this.untileWindow(windowId);
+            }
             // Maximize window
             // Store original size for restoration
             windowData.originalSize = {
@@ -223,9 +474,9 @@ class WindowManager {
             
             // Set maximized position and size
             windowData.element.style.width = 'calc(100% - 40px)';
-            windowData.element.style.height = 'calc(100% - 40px)';
+            windowData.element.style.height = 'calc(100% - 125px)';
             windowData.element.style.left = '20px';
-            windowData.element.style.top = '30px';
+            windowData.element.style.top = '40px';
             windowData.isMaximized = true;
         }
     }
