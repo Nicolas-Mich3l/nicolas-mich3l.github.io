@@ -119,7 +119,7 @@ class SpotifyGenreTracker {
                 <h2>Whats Nic listening to?</h2>
                 <p>Based on ${data.totalTracks} recently played tracks</p>
                 <p>Last updated: ${data.lastUpdated}</p>
-                ${blacklistCount > 0 ? `<p>${blacklistCount} genre(s) filtered out</p>` : ''}
+                <p>Data is fetched from the spotify API by a serverless function: <a target="_blank" rel="noopener noreferrer" href="https://github.com/Nicolas-Mich3l/spotify_functions/tree/main">Github</a><p>
             </div>
             
             <div class="controls">
